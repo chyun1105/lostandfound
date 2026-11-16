@@ -4,39 +4,23 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "tsx watch server/src/index.ts",
-    "dev:client": "vite",
-    "tunnel:quick": "node scripts/run-quick-tunnel.mjs",
-    "start": "node -e \"process.env.NODE_ENV='production'; import('./dist-server/index.js')\"",
-    "build": "tsc -b && tsc -p tsconfig.server.json && vite build",
-    "preview": "npm run start",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "push:apps-script": "cd apps-script && npx --yes @google/clasp@3.4.1 push",
+    "test:apps-script": "node --test apps-script/test/*.test.mjs",
     "typecheck": "tsc -b --pretty"
   },
   "dependencies": {
-    "@tensorflow/tfjs": "^4.22.0",
     "@vitejs/plugin-react": "latest",
-    "better-sqlite3": "^13.2.0",
-    "express": "^5.3.0",
-    "express-rate-limit": "^8.7.4",
-    "file-type": "^22.3.0",
     "lucide-react": "latest",
-    "multer": "^2.5.0",
-    "nsfwjs": "^4.3.0",
     "react": "latest",
     "react-dom": "latest",
-    "sharp": "^0.35.5",
     "vite": "latest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/express": "^5.0.6",
-    "@types/multer": "^2.3.0",
     "@types/node": "^26.6.6",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "concurrently": "^10.0.7",
-    "tsx": "^4.23.15",
     "typescript": "latest"
   }
 }

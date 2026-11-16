@@ -1,8 +1,9 @@
 node_modules/
 dist/
-dist-server/
 .data/
 .vercel/
+.clasp.json
+apps-script/.clasp.json
 .env
 .env.*
 !.env.example

@@ -1,20 +1,98 @@
 import type { BoardType, ItemStatus, LostFoundItem, SortOrder } from "./types";
 
+type ApiPayload = Record<string, unknown> & {
+  photos?: { name: string; type: string; data: string }[];
+};
+
+const adminSessionKey = "lostnfound.admin-session";
+const maxPhotoBytes = 3 * 1024 * 1024;
+let inMemoryAdminSession = "";
+
+function getAdminSessionToken() {
+  try {
+    return sessionStorage.getItem(adminSessionKey) ?? inMemoryAdminSession;
+  } catch {
+    return inMemoryAdminSession;
+  }
+}
+
+function setAdminSessionToken(token: string | null) {
+  inMemoryAdminSession = token ?? "";
+  try {
+    if (token) sessionStorage.setItem(adminSessionKey, token);
+    else sessionStorage.removeItem(adminSessionKey);
+  } catch {
+    return;
+  }
+}
+
+async function filePayload(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+  }
+  return { name: file.name, type: file.type, data: btoa(binary) };
+}
+
+async function formPayload(form: FormData): Promise<ApiPayload> {
+  const payload: ApiPayload = {};
+  const photos: File[] = [];
+  form.forEach((value, key) => {
+    if (value instanceof File) {
+      if (value.size > 0) photos.push(value);
+    } else {
+      payload[key] = value;
+    }
+  });
+  if (photos.length > 3) throw new Error("사진은 최대 3장까지 등록할 수 있습니다.");
+  if (photos.reduce((total, file) => total + file.size, 0) > maxPhotoBytes) {
+    throw new Error("Vercel 업로드 한도에 맞춰 사진을 한 번에 총 3MB 이하로 등록해 주세요.");
+  }
+  if (photos.length > 0) payload.photos = await Promise.all(photos.map(filePayload));
+  return payload;
+}
+
+function updateAdminSession(url: string, method: string, data: unknown) {
+  if (method === "POST" && url === "/api/admin/logout") {
+    setAdminSessionToken(null);
+  }
+  if ((url === "/api/admin/login" || url === "/api/admin/setup") && data) {
+    const token = (data as { sessionToken?: string }).sessionToken;
+    if (token) setAdminSessionToken(token);
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const method = init?.method ?? "GET";
+  let body: BodyInit | undefined;
+  if (init?.body instanceof FormData) {
+    body = JSON.stringify(await formPayload(init.body));
+  } else {
+    body = init?.body ?? undefined;
+  }
+  const sessionToken = getAdminSessionToken();
   const response = await fetch(url, {
-    credentials: "same-origin",
     ...init,
+    method,
+    body,
+    credentials: "same-origin",
     headers: {
-      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(sessionToken ? { "X-Admin-Session": sessionToken } : {}),
       ...init?.headers,
     },
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { error?: string } | null;
-    throw new Error(body?.error || `요청에 실패했습니다 (${response.status}).`);
+  if (response.status === 204) {
+    updateAdminSession(url, method, null);
+    return undefined as T;
   }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const data = await response.json().catch(() => null) as { error?: string } | null;
+  if (!response.ok) {
+    throw new Error(data?.error || `요청에 실패했습니다 (${response.status}).`);
+  }
+  updateAdminSession(url, method, data);
+  return data as T;
 }
 
 export function getItems(options: {

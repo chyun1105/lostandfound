@@ -656,6 +656,11 @@ function ItemDialog({
                       setError("사진은 댓글당 최대 3장까지 등록할 수 있습니다.");
                     } else if (selected.some((file) => file.size > 5 * 1024 * 1024)) {
                       setError("사진 한 장의 용량은 5MB 이하여야 합니다.");
+                    } else if (
+                      [...commentImages, ...selected].reduce((total, file) => total + file.size, 0) >
+                      3 * 1024 * 1024
+                    ) {
+                      setError("Vercel 업로드 한도에 맞춰 사진을 한 번에 총 3MB 이하로 등록해 주세요.");
                     } else {
                       setError("");
                       setCommentImages((current) => [...current, ...selected]);
@@ -679,6 +684,7 @@ function ItemDialog({
                 <button className="secondary-button comment-photo-button" type="button" disabled={commentImages.length >= 3} onClick={() => commentFileInput.current?.click()}>
                   <ImagePlus size={15} /> 사진 추가 ({commentImages.length}/3)
                 </button>
+                <p className="upload-safety-note">사진은 한 번에 총 3MB 이하로 등록해 주세요. 자동 사진 검열은 지원하지 않으므로 개인정보가 보이는 사진을 올리지 마세요.</p>
               </>
             )}
             {error && <p className="field-error" role="alert">{error}</p>}
@@ -809,6 +815,11 @@ function WriteDialog({
     }
     if (files.some((file) => file.size > 5 * 1024 * 1024)) {
       setFileError("사진 한 장의 용량은 5MB 이하여야 합니다.");
+      event.target.value = "";
+      return;
+    }
+    if ([...selectedFiles, ...files].reduce((total, file) => total + file.size, 0) > 3 * 1024 * 1024) {
+      setFileError("Vercel 업로드 한도에 맞춰 사진을 한 번에 총 3MB 이하로 등록해 주세요.");
       event.target.value = "";
       return;
     }
@@ -990,6 +1001,7 @@ function WriteDialog({
               </button>
             )}
           </div>
+          <p className="upload-safety-note">사진은 한 번에 총 3MB 이하로 등록해 주세요. 자동 사진 검열은 지원하지 않으므로 개인정보가 보이는 사진을 올리지 마세요.</p>
           {fileError && <p className="field-error" role="alert">{fileError}</p>}
 
           {submitError && <p className="field-error" role="alert">{submitError}</p>}
