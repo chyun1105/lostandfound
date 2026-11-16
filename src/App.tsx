@@ -34,6 +34,8 @@ import type {
 } from "./types";
 import { itemCategories } from "./types";
 
+const cloudflareDeployment = import.meta.env.MODE === "cloudflare";
+
 const statusLabels: Record<ItemStatus, string> = {
   stored: "보관 중",
   delivered: "전달 완료",
@@ -679,6 +681,9 @@ function ItemDialog({
                 <button className="secondary-button comment-photo-button" type="button" disabled={commentImages.length >= 3} onClick={() => commentFileInput.current?.click()}>
                   <ImagePlus size={15} /> 사진 추가 ({commentImages.length}/3)
                 </button>
+                {cloudflareDeployment && (
+                  <p className="upload-safety-note">공개 데모에서는 사진의 성적 콘텐츠 자동 검열이 적용되지 않습니다. 개인정보가 보이는 사진을 올리지 마세요.</p>
+                )}
               </>
             )}
             {error && <p className="field-error" role="alert">{error}</p>}
@@ -990,6 +995,9 @@ function WriteDialog({
               </button>
             )}
           </div>
+          {cloudflareDeployment && (
+            <p className="upload-safety-note">공개 데모에서는 사진의 성적 콘텐츠 자동 검열이 적용되지 않습니다. 개인정보가 보이는 사진을 올리지 마세요.</p>
+          )}
           {fileError && <p className="field-error" role="alert">{fileError}</p>}
 
           {submitError && <p className="field-error" role="alert">{submitError}</p>}
