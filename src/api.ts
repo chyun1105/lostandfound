@@ -87,9 +87,21 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     updateAdminSession(url, method, null);
     return undefined as T;
   }
-  const data = await response.json().catch(() => null) as { error?: string } | null;
+  const responseText = await response.text();
+  let data: unknown;
+  try {
+    data = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    const contentType = response.headers.get("Content-Type") ?? "";
+    const isHtml = /text\/html/i.test(contentType) || /^\s*<!doctype html|^\s*<html/i.test(responseText);
+    throw new Error(isHtml
+      ? "API가 HTML 페이지를 반환했습니다. 로컬 개발 중이라면 VITE_API_PROXY_TARGET을 Vercel 주소로 설정하고 다시 실행해 주세요."
+      : "서버 응답이 올바른 JSON 형식이 아닙니다.");
+  }
   if (!response.ok) {
-    throw new Error(data?.error || `요청에 실패했습니다 (${response.status}).`);
+    const message = data && typeof data === "object" && "error" in data &&
+      typeof data.error === "string" ? data.error : `요청에 실패했습니다 (${response.status}).`;
+    throw new Error(message);
   }
   updateAdminSession(url, method, data);
   return data as T;

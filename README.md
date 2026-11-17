@@ -96,6 +96,8 @@ npm run dev
 VITE_API_PROXY_TARGET=https://<vercel-project-domain> npm run dev
 ```
 
+`npm run dev`만 실행하면 Vite가 `/api` 요청을 프런트엔드 HTML로 돌려줄 수 있으므로 API 요청에는 위 프록시 설정이 필요합니다. 이때 화면에 API 연결 오류가 표시되면 Vercel 배포 주소를 확인하고 다시 실행하세요.
+
 Apps Script 코드를 수정한 뒤에는 `npm run test:apps-script`, `npm run typecheck`, `npm run build`로 확인할 수 있습니다.
 
 ## 담당자/Google 계정 인수인계
